@@ -6,10 +6,9 @@ module.exports = {
         const { user } = req.headers;
 
         const loggerDev = await Dev.findById(user);
-
         const users = await Dev.find({
             $and: [
-                { _id: { $ne: user } },
+                { _id: { $ne: loggerDev._id } },
                 { _id: { $nin: loggerDev.likes } },
                 { _id: { $nin: loggerDev.dislikes } },
             ]
