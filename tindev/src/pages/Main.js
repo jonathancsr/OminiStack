@@ -2,16 +2,20 @@ import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-community/async-storage';
 import { Text, SafeAreaView, View, Image, StyleSheet } from 'react-native';
 
-import api from '../services/api'
+import api from '../services/api';
+import io from 'socket.io-client';
 
 import logo from '../assets/logo.png'
 import like from '../assets/like.png'
 import dislike from '../assets/dislike.png'
+import itsamatch from '../assets/itsamatch.png'
 
 import { TouchableOpacity } from 'react-native-gesture-handler';
+import { bold } from 'ansi-colors';
 
 export default function Main({ navigation }) {
-    const id = navigation.getParam('user')
+    const id = navigation.getParam('user');
+    const [matchDev, setmatchDev] = useState(null);
     const [users, setUsers] = useState([]);
 
     useEffect(() => {
@@ -25,6 +29,18 @@ export default function Main({ navigation }) {
         }
         loadUsers();
     }, [id]);
+
+    useEffect(() => {
+        const socket = io('http://192.168.0.9:3333',
+            {
+                query: { user: id }
+            });
+
+        socket.on('match', dev => {
+            setmatchDev(dev);
+        })
+
+    }, [id])
 
     async function handleLike() {
         const [user, ...rest] = users;
@@ -76,6 +92,18 @@ export default function Main({ navigation }) {
                     </TouchableOpacity>
                     <TouchableOpacity onPress={handleDislike} style={styles.button}>
                         <Image source={dislike} />
+                    </TouchableOpacity>
+                </View>
+            )}
+
+            {matchDev && (
+                <View style={styles.matchContainer} >
+                    <Image style={styles.matchImg} source={itsamatch} />
+                    <Image style={styles.matchAvatar} source={{ uri: matchDev.avatar }} />
+                    <Text style={styles.matchName}>{matchDev.name}</Text>
+                    <Text style={styles.matchBio}>{matchDev.bio}</Text>
+                    <TouchableOpacity onPress={() => setmatchDev(null)}>
+                        <Text style={styles.closeMatch}>Fechar</Text>
                     </TouchableOpacity>
                 </View>
             )}
@@ -156,5 +184,44 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.05,
         shadowRadius: 2,
         shadowOffset: { width: 0, height: 2 }
+    },
+    matchContainer: {
+        zIndex: 999999,
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    matchImg: {
+        height: 60,
+        resizeMode: 'contain'
+    },
+    matchAvatar: {
+        width: 160,
+        height: 160,
+        borderRadius: 80,
+        borderWidth: 5,
+        borderColor: '#FFF',
+        marginVertical: 30,
+    },
+    matchName: {
+        fontSize: 26,
+        fontWeight: 'bold',
+        color: '#FFF',
+    },
+    matchBio: {
+        marginTop: 10,
+        fontSize: 16,
+        color: 'rgba(255,255,255,0.8)',
+        lineHeight: 24,
+        textAlign: 'center',
+        paddingHorizontal: 30
+    },
+    closeMatch: {
+        fontSize: 16,
+        color: 'rgba(255,255,255,0.8)',
+        textAlign: 'center',
+        marginTop: 30,
+        fontWeight: 'bold',
     },
 });
